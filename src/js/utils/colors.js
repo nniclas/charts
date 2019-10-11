@@ -12,7 +12,8 @@ const PRESET_COLOR_MAP = {
 	'black': '#36114C',
 	'grey': '#bdd3e6',
 	'light-grey': '#f0f4f7',
-	'dark-grey': '#b8c2cc'
+    'dark-grey': '#b8c2cc',
+    'deep-yellow': '#ffc85a'
 };
 
 function limitColor(r){
