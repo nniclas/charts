@@ -79,7 +79,7 @@ export function animatePath(paths, newXList, newYList, zeroLine, spline) {
 	let pointsStr = newYList.map((y, i) => (newXList[i] + ',' + y)).join("L");
     
 	if (spline)
-		pointsStr = createSplineCurve(newXList, newYList);
+		pointsStr = getSplineCurvePointsStr(newXList, newYList);
 
 	const animPath = [paths.path, {d:"M" + pointsStr}, PATH_ANIM_DUR, STD_EASING];
 	pathComponents.push(animPath);
