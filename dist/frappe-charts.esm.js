@@ -156,7 +156,7 @@ const DEFAULT_CHAR_WIDTH = 7;
 const TOOLTIP_POINTER_TRIANGLE_HEIGHT = 5;
 
 const DEFAULT_CHART_COLORS = ['light-blue', 'blue', 'violet', 'red', 'orange',
-	'yellow', 'green', 'light-green', 'purple', 'magenta', 'light-grey', 'dark-grey'];
+	'yellow', 'green', 'light-green', 'purple', 'magenta', 'light-grey', 'dark-grey', 'deep-yellow'];
 const HEATMAP_COLORS_GREEN = ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'];
 
 
@@ -412,7 +412,7 @@ function shortenLargeNumber(label) {
 }
 
 // cubic bezier curve calculation (from example by François Romain)
-function createSplineCurve(xList, yList) {
+function getSplineCurvePointsStr(xList, yList) {
 
 	let points=[];
 	for(let i=0;i<xList.length;i++){
@@ -469,7 +469,8 @@ const PRESET_COLOR_MAP = {
 	'black': '#36114C',
 	'grey': '#bdd3e6',
 	'light-grey': '#f0f4f7',
-	'dark-grey': '#b8c2cc'
+    'dark-grey': '#b8c2cc',
+    'deep-yellow': '#ffc85a'
 };
 
 function limitColor(r){
@@ -1072,7 +1073,7 @@ function getPaths(xList, yList, color, options={}, meta={}) {
 
 	// Spline
 	if (options.spline)
-		pointsStr = createSplineCurve(xList, yList);
+		pointsStr = getSplineCurvePointsStr(xList, yList);
     
 	let path = makePath("M"+pointsStr, 'line-graph-path', color);
 
@@ -1484,9 +1485,10 @@ class BaseChart {
 
 		this.config = {
 			showTooltip: 1, // calculate
-			showLegend: 1, // calculate
+            showLegend: 1, // calculate
+            //showLegend: options.hideLegend || 1, // calculate
 			isNavigable: options.isNavigable || 0,
-			animate: 1,
+			animate: (typeof options.animate !== 'undefined') ? options.animate : 1,
 			truncateLegends: options.truncateLegends || 0
 		};
 
@@ -1679,7 +1681,7 @@ class BaseChart {
 		}
 		this.data = this.prepareData(data);
 		this.calc(); // builds state
-		this.render();
+		this.render(this.components, this.config.animate);
 	}
 
 	render(components=this.components, animate=true) {
