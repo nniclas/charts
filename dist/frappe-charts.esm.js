@@ -61,7 +61,7 @@ function isElementInViewport(el) {
 function getElementContentWidth(element) {
 	var styles = window.getComputedStyle(element);
 	var padding = parseFloat(styles.paddingLeft) +
-		parseFloat(styles.paddingRight);
+        parseFloat(styles.paddingRight);
 
 	return element.clientWidth - padding;
 }
@@ -469,8 +469,8 @@ const PRESET_COLOR_MAP = {
 	'black': '#36114C',
 	'grey': '#bdd3e6',
 	'light-grey': '#f0f4f7',
-    'dark-grey': '#b8c2cc',
-    'deep-yellow': '#ffc85a'
+	'dark-grey': '#b8c2cc',
+	'deep-yellow': '#ffd65a'
 };
 
 function limitColor(r){
@@ -1485,11 +1485,12 @@ class BaseChart {
 
 		this.config = {
 			showTooltip: 1, // calculate
-            showLegend: 1, // calculate
-            //showLegend: options.hideLegend || 1, // calculate
+			//showLegend: 1, // calculate
+			showLegend: options.hideLegend && options.hideLegend == true ? 0 : 1, // calculate
 			isNavigable: options.isNavigable || 0,
 			animate: (typeof options.animate !== 'undefined') ? options.animate : 1,
-			truncateLegends: options.truncateLegends || 0
+			truncateLegends: options.truncateLegends || 0,
+			stretch: options.stretch
 		};
 
 		this.measures = JSON.parse(JSON.stringify(BASE_MEASURES));
@@ -3258,6 +3259,17 @@ class AxisChart extends BaseChart {
 			this.config.showLegend = 0;
 			this.measures.paddings.bottom = 30;
 		}
+        
+		if (this.config.stretch) {
+			this.measures.margins.top = 0;
+			this.measures.margins.bottom = 0;
+			this.measures.margins.left = 0;
+			this.measures.margins.right = 0;
+			this.measures.paddings.top = 0;
+			this.measures.paddings.bottom = 0;
+			this.measures.paddings.left = 0;
+			this.measures.paddings.right = 0;
+		}
 	}
 
 	configure(options) {
@@ -3268,6 +3280,10 @@ class AxisChart extends BaseChart {
 
 		this.config.xAxisMode = options.axisOptions.xAxisMode || 'span';
 		this.config.yAxisMode = options.axisOptions.yAxisMode || 'span';
+		this.config.disableXAxis = options.axisOptions.disableXAxis;
+		this.config.disableYAxis = options.axisOptions.disableYAxis;
+		this.config.stretch = options.stretch;
+        
 		this.config.xIsSeries = options.axisOptions.xIsSeries || 0;
 		this.config.shortenYAxisNumbers = options.axisOptions.shortenYAxisNumbers || 0;
 
@@ -3298,9 +3314,10 @@ class AxisChart extends BaseChart {
 		let labels = this.data.labels;
 		s.datasetLength = labels.length;
 
-		s.unitWidth = this.width/(s.datasetLength);
+		s.unitWidth = this.config.stretch ? this.width/(s.datasetLength-1) : this.width/(s.datasetLength);
+		// console.log('this.width:'+this.width);
 		// Default, as per bar, and mixed. Only line will be a special case
-		s.xOffset = s.unitWidth/2;
+		s.xOffset = this.config.stretch ? 0 : s.unitWidth/2;
 
 		// // For a pure Line Chart
 		// s.unitWidth = this.width/(s.datasetLength - 1);
@@ -3418,8 +3435,10 @@ class AxisChart extends BaseChart {
 	}
 
 	setupComponents() {
-		let componentConfigs = [
-			[
+		let componentConfigs = [];
+        
+		if (!this.config.disableYAxis)
+			componentConfigs.push([
 				'yAxis',
 				{
 					mode: this.config.yAxisMode,
@@ -3430,9 +3449,10 @@ class AxisChart extends BaseChart {
 				function() {
 					return this.state.yAxis;
 				}.bind(this)
-			],
+			]);
 
-			[
+		if (!this.config.disableXAxis)
+			componentConfigs.push(			[
 				'xAxis',
 				{
 					mode: this.config.xAxisMode,
@@ -3443,22 +3463,21 @@ class AxisChart extends BaseChart {
 					let s = this.state;
 					s.xAxis.calcLabels = getShortenedLabels(this.width,
 						s.xAxis.labels, this.config.xIsSeries);
-
+    
 					return s.xAxis;
 				}.bind(this)
-			],
-
-			[
-				'yRegions',
-				{
-					width: this.width,
-					pos: 'right'
-				},
-				function() {
-					return this.state.yRegions;
-				}.bind(this)
-			],
-		];
+			]);
+            
+		componentConfigs.push([
+			'yRegions',
+			{
+				width: this.width,
+				pos: 'right'
+			},
+			function() {
+				return this.state.yRegions;
+			}.bind(this)
+		]);
 
 		let barDatasets = this.state.datasets.filter(d => d.chartType === 'bar');
 		let lineDatasets = this.state.datasets.filter(d => d.chartType === 'line');
@@ -3650,23 +3669,25 @@ class AxisChart extends BaseChart {
 	}
 
 	renderLegend() {
-		let s = this.data;
-		if(s.datasets.length > 1) {
-			this.legendArea.textContent = '';
-			s.datasets.map((d, i) => {
-				let barWidth = AXIS_LEGEND_BAR_SIZE;
-				// let rightEndPoint = this.baseWidth - this.measures.margins.left - this.measures.margins.right;
-				// let multiplier = s.datasets.length - i;
-				let rect = legendBar(
-					// rightEndPoint - multiplier * barWidth,	// To right align
-					barWidth * i,
-					'0',
-					barWidth,
-					this.colors[i],
-					d.name,
-					this.config.truncateLegends);
-				this.legendArea.appendChild(rect);
-			});
+		if (this.config.showLegend) {
+			let s = this.data;
+			if(s.datasets.length > 1) {
+				this.legendArea.textContent = '';
+				s.datasets.map((d, i) => {
+					let barWidth = AXIS_LEGEND_BAR_SIZE;
+					// let rightEndPoint = this.baseWidth - this.measures.margins.left - this.measures.margins.right;
+					// let multiplier = s.datasets.length - i;
+					let rect = legendBar(
+						// rightEndPoint - multiplier * barWidth,	// To right align
+						barWidth * i,
+						'0',
+						barWidth,
+						this.colors[i],
+						d.name,
+						this.config.truncateLegends);
+					this.legendArea.appendChild(rect);
+				});
+			}
 		}
 	}
 
